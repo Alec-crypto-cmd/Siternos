@@ -586,7 +586,7 @@ const LandingPage = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        <GlobeClassName="w-4 h-4 inline mr-2" />
+                        <Globe className="w-4 h-4 inline mr-2" />
                         Website Name
                       </label>
                       <input
