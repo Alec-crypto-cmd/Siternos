@@ -105,10 +105,11 @@ const Dashboard = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending': return 'text-yellow-400 bg-yellow-400/10';
-      case 'in-progress': return 'text-blue-400 bg-blue-400/10';
-      case 'completed': return 'text-green-400 bg-green-400/10';
-      default: return 'text-gray-400 bg-gray-400/10';
+      case 'pending': return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
+      case 'in-progress': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
+      case 'completed': return 'text-green-400 bg-green-400/10 border-green-400/20';
+      case 'cancelled': return 'text-red-400 bg-red-400/10 border-red-400/20';
+      default: return 'text-gray-400 bg-gray-400/10 border-gray-400/20';
     }
   };
 
@@ -117,6 +118,7 @@ const Dashboard = () => {
       case 'pending': return <Clock className="w-4 h-4" />;
       case 'in-progress': return <Globe className="w-4 h-4" />;
       case 'completed': return <CheckCircle className="w-4 h-4" />;
+      case 'cancelled': return <AlertCircle className="w-4 h-4" />;
       default: return <Clock className="w-4 h-4" />;
     }
   };
