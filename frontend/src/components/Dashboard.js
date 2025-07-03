@@ -128,28 +128,58 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className={`min-h-screen transition-colors duration-300 ${
+      theme === 'dark' 
+        ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' 
+        : 'bg-gradient-to-br from-gray-50 via-blue-50 to-gray-50'
+    }`}>
       {/* Navigation */}
-      <nav className="bg-black/20 backdrop-blur-md border-b border-white/10">
+      <nav className={`backdrop-blur-md border-b transition-colors duration-300 ${
+        theme === 'dark' 
+          ? 'bg-black/20 border-white/10' 
+          : 'bg-white/20 border-gray-200/50'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => navigate('/')}
-                className="text-gray-400 hover:text-white transition-colors"
+                className={`transition-colors ${
+                  theme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                }`}
               >
                 <ArrowLeft className="w-6 h-6" />
               </button>
-              <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+              <div className={`text-2xl font-bold bg-gradient-to-r ${
+                theme === 'dark' 
+                  ? 'from-blue-400 to-cyan-400' 
+                  : 'from-blue-600 to-cyan-600'
+              } bg-clip-text text-transparent`}>
                 SITERNOS
               </div>
             </div>
             
             <div className="flex items-center gap-4">
-              <span className="text-gray-300">Welcome, {user.name}</span>
+              <button
+                onClick={toggleTheme}
+                className={`p-2 rounded-lg transition-colors ${
+                  theme === 'dark' 
+                    ? 'text-gray-400 hover:text-white hover:bg-white/10' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+              <span className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                Welcome, {user.name}
+              </span>
               <button
                 onClick={logout}
-                className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+                className={`px-4 py-2 transition-colors ${
+                  theme === 'dark' 
+                    ? 'text-gray-300 hover:text-white' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
               >
                 Logout
               </button>
