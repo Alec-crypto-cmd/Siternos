@@ -13,7 +13,10 @@ import {
   ArrowLeft,
   Edit,
   Trash2,
-  FileText
+  FileText,
+  Moon,
+  Sun,
+  AlertCircle
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { useNavigate } from 'react-router-dom';
