@@ -22,7 +22,7 @@ import { useAuth } from './AuthProvider';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
-  const { user, logout, updateProfile } = useAuth();
+  const { user, logout, updateProfile, theme, toggleTheme } = useAuth();
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [showNewProject, setShowNewProject] = useState(false);
