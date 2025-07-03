@@ -15,7 +15,10 @@ import {
   Building,
   Phone,
   Hash,
-  FileText
+  FileText,
+  Moon,
+  Sun,
+  Settings
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { useNavigate } from 'react-router-dom';
@@ -25,7 +28,8 @@ const LandingPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [isLogin, setIsLogin] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
-  const { user, login, register } = useAuth();
+  const [loginData, setLoginData] = useState({ email: '', password: '' });
+  const { user, login, register, theme, toggleTheme } = useAuth();
   const navigate = useNavigate();
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: heroRef });
@@ -56,7 +60,7 @@ const LandingPage = () => {
         '1 Month Support'
       ],
       popular: false,
-      gradient: 'from-blue-500 to-purple-600'
+      gradient: 'from-blue-500 to-cyan-600'
     },
     {
       name: 'Advanced',
@@ -71,7 +75,7 @@ const LandingPage = () => {
         'Analytics Setup'
       ],
       popular: true,
-      gradient: 'from-purple-600 to-pink-500'
+      gradient: 'from-cyan-500 to-blue-600'
     },
     {
       name: 'Advanced 2',
@@ -87,7 +91,7 @@ const LandingPage = () => {
         'Consultation Calls'
       ],
       popular: false,
-      gradient: 'from-pink-500 to-red-500'
+      gradient: 'from-indigo-500 to-purple-600'
     }
   ];
 
@@ -113,7 +117,11 @@ const LandingPage = () => {
   const handlePlanSelect = (plan) => {
     setSelectedPlan(plan);
     if (user) {
-      navigate('/dashboard');
+      if (user.isAdmin) {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
     } else {
       setShowModal(true);
     }
@@ -125,31 +133,23 @@ const LandingPage = () => {
     try {
       let userData;
       if (isLogin) {
-        // In a real app, this would verify credentials with backend
-        const existingUser = JSON.parse(localStorage.getItem('siternos_user') || '{}');
-        if (existingUser.email === formData.email) {
-          userData = existingUser;
-          login(userData);
-        } else {
-          alert('User not found. Please register first.');
+        userData = login(loginData);
+        if (!userData) {
+          alert('Invalid credentials. Please try again.');
           return;
         }
       } else {
         userData = register(formData);
       }
 
-      // Send email notification (in a real app, this would be handled by backend)
-      console.log('Email would be sent to siternos@outlook.com with:', {
-        user: userData,
-        selectedPlan,
-        projectDetails: {
-          websiteName: formData.websiteName,
-          other: formData.other
-        }
-      });
-
       setShowModal(false);
-      navigate('/dashboard');
+      
+      // Redirect based on user type
+      if (userData.isAdmin) {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error) {
       console.error('Error:', error);
       alert('Something went wrong. Please try again.');
@@ -157,44 +157,96 @@ const LandingPage = () => {
   };
 
   const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    if (isLogin) {
+      setLoginData({
+        ...loginData,
+        [e.target.name]: e.target.value
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [e.target.name]: e.target.value
+      });
+    }
   };
 
+  useEffect(() => {
+    // Check if user is logged in and redirect appropriately
+    if (user) {
+      if (user.isAdmin) {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
+    }
+  }, [user, navigate]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className={`min-h-screen transition-colors duration-300 ${
+      theme === 'dark' 
+        ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' 
+        : 'bg-gradient-to-br from-gray-50 via-blue-50 to-gray-50'
+    }`}>
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-black/20 backdrop-blur-md border-b border-white/10">
+      <nav className={`fixed top-0 w-full z-50 backdrop-blur-md border-b transition-colors duration-300 ${
+        theme === 'dark' 
+          ? 'bg-black/20 border-white/10' 
+          : 'bg-white/20 border-gray-200/50'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent"
+              className={`text-2xl font-bold bg-gradient-to-r ${
+                theme === 'dark' 
+                  ? 'from-blue-400 to-cyan-400' 
+                  : 'from-blue-600 to-cyan-600'
+              } bg-clip-text text-transparent`}
             >
               SITERNOS
             </motion.div>
-            {user ? (
+            <div className="flex items-center gap-4">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => navigate('/dashboard')}
-                className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-medium hover:shadow-lg transition-all duration-300"
+                onClick={toggleTheme}
+                className={`p-2 rounded-lg transition-colors ${
+                  theme === 'dark' 
+                    ? 'text-gray-400 hover:text-white hover:bg-white/10' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
               >
-                Dashboard
+                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </motion.button>
-            ) : (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowModal(true)}
-                className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-medium hover:shadow-lg transition-all duration-300"
-              >
-                Get Started
-              </motion.button>
-            )}
+              {user ? (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate(user.isAdmin ? '/admin' : '/dashboard')}
+                  className={`px-6 py-2 rounded-full font-medium transition-all duration-300 ${
+                    theme === 'dark' 
+                      ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:shadow-lg' 
+                      : 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:shadow-lg'
+                  }`}
+                >
+                  {user.isAdmin ? 'Admin Panel' : 'Dashboard'}
+                </motion.button>
+              ) : (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowModal(true)}
+                  className={`px-6 py-2 rounded-full font-medium transition-all duration-300 ${
+                    theme === 'dark' 
+                      ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:shadow-lg' 
+                      : 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:shadow-lg'
+                  }`}
+                >
+                  Get Started
+                </motion.button>
+              )}
+            </div>
           </div>
         </div>
       </nav>
@@ -208,7 +260,11 @@ const LandingPage = () => {
           <div 
             className="w-full h-full bg-cover bg-center bg-no-repeat"
             style={{
-              backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1498050108023-c5249f4df085')`
+              backgroundImage: `linear-gradient(${
+                theme === 'dark' 
+                  ? 'rgba(0,0,0,0.4), rgba(0,0,0,0.6)' 
+                  : 'rgba(255,255,255,0.2), rgba(255,255,255,0.4)'
+              }), url('https://images.unsplash.com/photo-1498050108023-c5249f4df085')`
             }}
           />
         </motion.div>
@@ -218,10 +274,16 @@ const LandingPage = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight"
+            className={`text-5xl md:text-7xl font-bold mb-6 leading-tight ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}
           >
             Premium Websites for
-            <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent block">
+            <span className={`bg-gradient-to-r ${
+              theme === 'dark' 
+                ? 'from-blue-400 via-cyan-400 to-blue-400' 
+                : 'from-blue-600 via-cyan-600 to-blue-600'
+            } bg-clip-text text-transparent block`}>
               Modern Businesses
             </span>
           </motion.h1>
@@ -230,7 +292,9 @@ const LandingPage = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto"
+            className={`text-xl md:text-2xl mb-8 max-w-3xl mx-auto ${
+              theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+            }`}
           >
             Creating stunning, high-performance websites for Otter Company, Perplex, and forward-thinking businesses worldwide.
           </motion.p>
@@ -245,14 +309,22 @@ const LandingPage = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => document.getElementById('pricing').scrollIntoView({ behavior: 'smooth' })}
-              className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-semibold text-lg hover:shadow-2xl transition-all duration-300 flex items-center gap-2"
+              className={`px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300 flex items-center gap-2 ${
+                theme === 'dark' 
+                  ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:shadow-2xl' 
+                  : 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:shadow-2xl'
+              }`}
             >
               View Pricing <ArrowRight className="w-5 h-5" />
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="px-8 py-4 border-2 border-white/30 text-white rounded-full font-semibold text-lg hover:bg-white/10 transition-all duration-300"
+              className={`px-8 py-4 border-2 rounded-full font-semibold text-lg transition-all duration-300 ${
+                theme === 'dark' 
+                  ? 'border-white/30 text-white hover:bg-white/10' 
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-100'
+              }`}
             >
               See Our Work
             </motion.button>
@@ -261,7 +333,9 @@ const LandingPage = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-black/20 backdrop-blur-sm">
+      <section className={`py-20 backdrop-blur-sm ${
+        theme === 'dark' ? 'bg-black/20' : 'bg-white/20'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -269,10 +343,14 @@ const LandingPage = () => {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+            <h2 className={`text-4xl md:text-5xl font-bold mb-6 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
               Why Choose SITERNOS?
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            <p className={`text-xl max-w-3xl mx-auto ${
+              theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+            }`}>
               We combine cutting-edge technology with premium design to deliver websites that convert visitors into customers.
             </p>
           </motion.div>
@@ -305,18 +383,32 @@ const LandingPage = () => {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.2 }}
                 whileHover={{ y: -10 }}
-                className="group relative bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 hover:border-purple-500/50 transition-all duration-300"
+                className={`group relative backdrop-blur-sm rounded-2xl p-8 border transition-all duration-300 ${
+                  theme === 'dark' 
+                    ? 'bg-white/5 border-white/10 hover:border-blue-500/50' 
+                    : 'bg-white/30 border-gray-200/50 hover:border-blue-300/50'
+                }`}
               >
                 <div 
                   className="absolute inset-0 rounded-2xl opacity-20 bg-cover bg-center"
                   style={{ backgroundImage: `url('${feature.image}')` }}
                 />
                 <div className="relative z-10">
-                  <div className="text-purple-400 mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <div className={`mb-4 group-hover:scale-110 transition-transform duration-300 ${
+                    theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                  }`}>
                     {feature.icon}
                   </div>
-                  <h3 className="text-2xl font-semibold text-white mb-4">{feature.title}</h3>
-                  <p className="text-gray-300">{feature.description}</p>
+                  <h3 className={`text-2xl font-semibold mb-4 ${
+                    theme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    {feature.title}
+                  </h3>
+                  <p className={`${
+                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
+                    {feature.description}
+                  </p>
                 </div>
               </motion.div>
             ))}
@@ -333,10 +425,14 @@ const LandingPage = () => {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+            <h2 className={`text-4xl md:text-5xl font-bold mb-6 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
               Choose Your Perfect Plan
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            <p className={`text-xl max-w-3xl mx-auto ${
+              theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+            }`}>
               Transparent pricing with no hidden fees. Start building your dream website today.
             </p>
           </motion.div>
@@ -350,15 +446,23 @@ const LandingPage = () => {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
                 whileHover={{ y: -10, scale: plan.popular ? 1.05 : 1.02 }}
-                className={`relative bg-white/5 backdrop-blur-sm rounded-2xl p-8 border ${
+                className={`relative backdrop-blur-sm rounded-2xl p-8 border transition-all duration-300 ${
                   plan.popular 
-                    ? 'border-purple-500 shadow-2xl shadow-purple-500/20' 
-                    : 'border-white/10 hover:border-purple-500/50'
-                } transition-all duration-300`}
+                    ? theme === 'dark'
+                      ? 'border-blue-500 shadow-2xl shadow-blue-500/20 bg-white/10'
+                      : 'border-blue-400 shadow-2xl shadow-blue-400/20 bg-white/40'
+                    : theme === 'dark'
+                      ? 'border-white/10 hover:border-blue-500/50 bg-white/5'
+                      : 'border-gray-200/50 hover:border-blue-300/50 bg-white/30'
+                }`}
               >
                 {plan.popular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-semibold">
+                    <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                      theme === 'dark' 
+                        ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' 
+                        : 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white'
+                    }`}>
                       Most Popular
                     </span>
                   </div>
@@ -368,15 +472,29 @@ const LandingPage = () => {
                   <Users className="w-8 h-8 text-white" />
                 </div>
                 
-                <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
+                <h3 className={`text-2xl font-bold mb-2 ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>
+                  {plan.name}
+                </h3>
                 <div className="mb-6">
-                  <span className="text-4xl font-bold text-white">€{plan.price}</span>
-                  <span className="text-gray-400">/project</span>
+                  <span className={`text-4xl font-bold ${
+                    theme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    €{plan.price}
+                  </span>
+                  <span className={`${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
+                    /project
+                  </span>
                 </div>
                 
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-center text-gray-300">
+                    <li key={idx} className={`flex items-center ${
+                      theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                    }`}>
                       <CheckCircle className="w-5 h-5 text-green-400 mr-3 flex-shrink-0" />
                       {feature}
                     </li>
@@ -389,8 +507,12 @@ const LandingPage = () => {
                   onClick={() => handlePlanSelect(plan)}
                   className={`w-full py-3 rounded-xl font-semibold transition-all duration-300 ${
                     plan.popular
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg'
-                      : 'bg-white/10 text-white hover:bg-white/20'
+                      ? theme === 'dark'
+                        ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:shadow-lg'
+                        : 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:shadow-lg'
+                      : theme === 'dark'
+                        ? 'bg-white/10 text-white hover:bg-white/20'
+                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                   }`}
                 >
                   Get Started
@@ -402,7 +524,9 @@ const LandingPage = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-20 bg-black/20 backdrop-blur-sm">
+      <section className={`py-20 backdrop-blur-sm ${
+        theme === 'dark' ? 'bg-black/20' : 'bg-white/20'
+      }`}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -410,7 +534,9 @@ const LandingPage = () => {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+            <h2 className={`text-4xl md:text-5xl font-bold mb-6 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
               Frequently Asked Questions
             </h2>
           </motion.div>
@@ -423,16 +549,26 @@ const LandingPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10"
+                className={`backdrop-blur-sm rounded-xl border ${
+                  theme === 'dark' 
+                    ? 'bg-white/5 border-white/10' 
+                    : 'bg-white/30 border-gray-200/50'
+                }`}
               >
                 <button
                   onClick={() => setOpenFaq(openFaq === index ? null : index)}
-                  className="w-full text-left p-6 flex justify-between items-center hover:bg-white/5 transition-colors duration-200"
+                  className={`w-full text-left p-6 flex justify-between items-center transition-colors duration-200 ${
+                    theme === 'dark' ? 'hover:bg-white/5' : 'hover:bg-white/20'
+                  }`}
                 >
-                  <span className="text-lg font-semibold text-white">{faq.question}</span>
-                  <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
+                  <span className={`text-lg font-semibold ${
+                    theme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    {faq.question}
+                  </span>
+                  <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${
                     openFaq === index ? 'rotate-180' : ''
-                  }`} />
+                  } ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />
                 </button>
                 <AnimatePresence>
                   {openFaq === index && (
@@ -443,7 +579,11 @@ const LandingPage = () => {
                       transition={{ duration: 0.3 }}
                       className="px-6 pb-6"
                     >
-                      <p className="text-gray-300">{faq.answer}</p>
+                      <p className={`${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
+                        {faq.answer}
+                      </p>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -454,16 +594,26 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 border-t border-white/10">
+      <footer className={`py-12 border-t ${
+        theme === 'dark' ? 'border-white/10' : 'border-gray-200/50'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-4">
+            <div className={`text-3xl font-bold mb-4 bg-gradient-to-r ${
+              theme === 'dark' 
+                ? 'from-blue-400 to-cyan-400' 
+                : 'from-blue-600 to-cyan-600'
+            } bg-clip-text text-transparent`}>
               SITERNOS
             </div>
-            <p className="text-gray-400 mb-4">
+            <p className={`mb-4 ${
+              theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+            }`}>
               Creating exceptional websites for modern businesses.
             </p>
-            <p className="text-gray-500 text-sm">
+            <p className={`text-sm ${
+              theme === 'dark' ? 'text-gray-500' : 'text-gray-500'
+            }`}>
               © 2025 Siternos. All rights reserved.
             </p>
           </div>
@@ -483,15 +633,23 @@ const LandingPage = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-slate-900 rounded-2xl p-8 max-w-md w-full border border-white/10"
+              className={`rounded-2xl p-8 max-w-md w-full border ${
+                theme === 'dark' 
+                  ? 'bg-slate-900 border-white/10' 
+                  : 'bg-white border-gray-200'
+              }`}
             >
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-white">
+                <h3 className={`text-2xl font-bold ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>
                   {isLogin ? 'Welcome Back' : 'Create Account'}
                 </h3>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="text-gray-400 hover:text-white transition-colors"
+                  className={`transition-colors ${
+                    theme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'
+                  }`}
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -499,25 +657,54 @@ const LandingPage = () => {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className={`block text-sm font-medium mb-2 ${
+                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                     <Mail className="w-4 h-4 inline mr-2" />
                     Email
                   </label>
                   <input
                     type="email"
                     name="email"
-                    value={formData.email}
+                    value={isLogin ? loginData.email : formData.email}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition-colors"
+                    className={`w-full px-4 py-3 border rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                      theme === 'dark' 
+                        ? 'bg-white/5 border-white/10 text-white placeholder-gray-400 focus:border-blue-500' 
+                        : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-blue-500'
+                    }`}
                     placeholder="your@email.com"
                   />
                 </div>
 
-                {!isLogin && (
+                {isLogin ? (
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${
+                      theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                    }`}>
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      name="password"
+                      value={loginData.password}
+                      onChange={handleInputChange}
+                      required
+                      className={`w-full px-4 py-3 border rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                        theme === 'dark' 
+                          ? 'bg-white/5 border-white/10 text-white placeholder-gray-400 focus:border-blue-500' 
+                          : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-blue-500'
+                      }`}
+                      placeholder="Password"
+                    />
+                  </div>
+                ) : (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className={`block text-sm font-medium mb-2 ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
                         <User className="w-4 h-4 inline mr-2" />
                         Full Name
                       </label>
@@ -527,13 +714,19 @@ const LandingPage = () => {
                         value={formData.name}
                         onChange={handleInputChange}
                         required
-                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition-colors"
+                        className={`w-full px-4 py-3 border rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                          theme === 'dark' 
+                            ? 'bg-white/5 border-white/10 text-white placeholder-gray-400 focus:border-blue-500' 
+                            : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-blue-500'
+                        }`}
                         placeholder="John Doe"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className={`block text-sm font-medium mb-2 ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
                         <Building className="w-4 h-4 inline mr-2" />
                         Company Name
                       </label>
@@ -543,13 +736,19 @@ const LandingPage = () => {
                         value={formData.companyName}
                         onChange={handleInputChange}
                         required
-                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition-colors"
+                        className={`w-full px-4 py-3 border rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                          theme === 'dark' 
+                            ? 'bg-white/5 border-white/10 text-white placeholder-gray-400 focus:border-blue-500' 
+                            : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-blue-500'
+                        }`}
                         placeholder="Your Company"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className={`block text-sm font-medium mb-2 ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
                         <Phone className="w-4 h-4 inline mr-2" />
                         Phone Number
                       </label>
@@ -559,13 +758,19 @@ const LandingPage = () => {
                         value={formData.phone}
                         onChange={handleInputChange}
                         required
-                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition-colors"
+                        className={`w-full px-4 py-3 border rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                          theme === 'dark' 
+                            ? 'bg-white/5 border-white/10 text-white placeholder-gray-400 focus:border-blue-500' 
+                            : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-blue-500'
+                        }`}
                         placeholder="+1 (555) 123-4567"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className={`block text-sm font-medium mb-2 ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
                         <Hash className="w-4 h-4 inline mr-2" />
                         Company Size
                       </label>
@@ -574,18 +779,34 @@ const LandingPage = () => {
                         value={formData.companySize}
                         onChange={handleInputChange}
                         required
-                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500 transition-colors"
+                        className={`w-full px-4 py-3 border rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                          theme === 'dark' 
+                            ? 'bg-white/5 border-white/10 text-white focus:border-blue-500' 
+                            : 'bg-white border-gray-200 text-gray-900 focus:border-blue-500'
+                        }`}
                       >
-                        <option value="">Select company size</option>
-                        <option value="1-10">1-10 employees</option>
-                        <option value="11-50">11-50 employees</option>
-                        <option value="51-200">51-200 employees</option>
-                        <option value="200+">200+ employees</option>
+                        <option value="" className={theme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-gray-900'}>
+                          Select company size
+                        </option>
+                        <option value="1-10" className={theme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-gray-900'}>
+                          1-10 employees
+                        </option>
+                        <option value="11-50" className={theme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-gray-900'}>
+                          11-50 employees
+                        </option>
+                        <option value="51-200" className={theme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-gray-900'}>
+                          51-200 employees
+                        </option>
+                        <option value="200+" className={theme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-gray-900'}>
+                          200+ employees
+                        </option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className={`block text-sm font-medium mb-2 ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
                         <Globe className="w-4 h-4 inline mr-2" />
                         Website Name
                       </label>
@@ -595,13 +816,19 @@ const LandingPage = () => {
                         value={formData.websiteName}
                         onChange={handleInputChange}
                         required
-                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition-colors"
+                        className={`w-full px-4 py-3 border rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                          theme === 'dark' 
+                            ? 'bg-white/5 border-white/10 text-white placeholder-gray-400 focus:border-blue-500' 
+                            : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-blue-500'
+                        }`}
                         placeholder="mycompany.com"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className={`block text-sm font-medium mb-2 ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
                         <FileText className="w-4 h-4 inline mr-2" />
                         Additional Details
                       </label>
@@ -610,7 +837,11 @@ const LandingPage = () => {
                         value={formData.other}
                         onChange={handleInputChange}
                         rows={3}
-                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition-colors resize-none"
+                        className={`w-full px-4 py-3 border rounded-xl transition-colors resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                          theme === 'dark' 
+                            ? 'bg-white/5 border-white/10 text-white placeholder-gray-400 focus:border-blue-500' 
+                            : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-blue-500'
+                        }`}
                         placeholder="Any specific requirements or features..."
                       />
                     </div>
@@ -621,7 +852,11 @@ const LandingPage = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   type="submit"
-                  className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300"
+                  className={`w-full py-3 rounded-xl font-semibold transition-all duration-300 ${
+                    theme === 'dark' 
+                      ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:shadow-lg' 
+                      : 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:shadow-lg'
+                  }`}
                 >
                   {isLogin ? 'Sign In' : 'Create Account & Continue'}
                 </motion.button>
@@ -630,7 +865,9 @@ const LandingPage = () => {
               <div className="mt-6 text-center">
                 <button
                   onClick={() => setIsLogin(!isLogin)}
-                  className="text-purple-400 hover:text-purple-300 transition-colors"
+                  className={`transition-colors ${
+                    theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'
+                  }`}
                 >
                   {isLogin ? 'Need an account? Sign up' : 'Already have an account? Sign in'}
                 </button>
